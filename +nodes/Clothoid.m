@@ -28,6 +28,9 @@ classdef Clothoid < handle
         delta_kappa
         poly_psi
         delta_s
+        qpsi
+        qx
+        qy
 
     end
 
@@ -43,16 +46,25 @@ classdef Clothoid < handle
             obj.kappa_start = kappa_start;
             obj.kappa_end = kappa_end;
 
-            obj.update()
+            obj.update();
 
         end
 
         function update(obj)
 
-            qpsi = polyval(obj.poly_psi, linspace(0, obj.len, obj.SAMPLES));
             set(obj.gobj, ...
-                'XData', cumtrapz(cos(qpsi)) * obj.delta_s + obj.x, ...
-                'YData', cumtrapz(sin(qpsi)) * obj.delta_s + obj.y);
+                'XData', obj.qx, ...
+                'YData', obj.qy);
+
+        end
+
+        function [x, y, psi, kappa, h] = tip(obj)
+
+            psi = obj.qpsi(end);
+            x = obj.qx(end);
+            y = obj.qy(end);
+            kappa = obj.kappa_end;
+            h = obj.gobj.Parent;
 
         end
 
@@ -73,6 +85,24 @@ classdef Clothoid < handle
         function value = get.delta_s(obj)
 
             value = obj.len / (obj.SAMPLES + 1);
+
+        end
+
+        function value = get.qpsi(obj)
+
+            value = polyval(obj.poly_psi, linspace(0, obj.len, obj.SAMPLES));
+
+        end
+
+        function value = get.qx(obj)
+
+            value = cumtrapz(cos(obj.qpsi)) * obj.delta_s + obj.x;
+
+        end
+
+        function value = get.qy(obj)
+
+            value = cumtrapz(sin(obj.qpsi)) * obj.delta_s + obj.y;
 
         end
 
