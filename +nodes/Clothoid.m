@@ -14,12 +14,13 @@ classdef Clothoid < handle
         len
         kappa_start
         kappa_end
+        child
 
     end
 
     properties (Access = private)
 
-        gobj
+        gxobj
 
     end
 
@@ -36,27 +37,62 @@ classdef Clothoid < handle
 
     methods
 
-        function obj = Clothoid(h, x, y, psi, len, kappa_start, kappa_end, varargin)
+        function obj = Clothoid(h, x, y, psi, kappa_start, varargin)
 
-            obj.gobj = line(nan, nan, 'Parent', h, varargin{:});
             obj.x = x;
             obj.y = y;
             obj.psi = psi;
-            obj.len = len;
             obj.kappa_start = kappa_start;
-            obj.kappa_end = kappa_end;
+            obj.constrain(varargin{:});
 
-            obj.update();
+            obj.child = nodes.Clothoid.empty();
+
+            obj.init_graphics(h);
+
+        end
+
+        %% chain
+
+        function child = append(obj, varargin)
+
+            assert(isempty(obj.child));
+
+            [x0, y0, psi0, kappa0, h] = obj.tip();
+            obj.child = nodes.Clothoid(h, x0, y0, psi0, kappa0, varargin{:});
+
+            child = obj.child;
 
         end
 
-        function update(obj)
+        function delete(obj)
 
-            set(obj.gobj, ...
-                'XData', obj.qx, ...
-                'YData', obj.qy);
+            delete(obj.gxobj);
+            delete(obj.child);
 
         end
+
+        %% shape constrains
+
+        function constrain(obj, varargin)
+
+            constrains = get_constrains(varargin{:});
+
+            if isempty(constrains.Length)
+                obj.kappa_end = constrains.FinalCurvature;
+                obj.len = 2 * constrains.HeadingChange / (obj.kappa_end + obj.kappa_start);
+            elseif isempty(constrains.FinalCurvature)
+                obj.len = constrains.Length;
+                obj.kappa_end = 2 * constrains.HeadingChange / obj.len - obj.kappa_start;
+            elseif isempty(constrains.HeadingChange)
+                obj.len = constrains.Length;
+                obj.kappa_end = constrains.FinalCurvature;
+            end
+
+            obj.refresh_graphics();
+
+        end
+
+        %% evaluation
 
         function [x, y, psi, kappa, h] = tip(obj)
 
@@ -64,7 +100,7 @@ classdef Clothoid < handle
             x = obj.qx(end);
             y = obj.qy(end);
             kappa = obj.kappa_end;
-            h = obj.gobj.Parent;
+            h = obj.gxobj.Parent;
 
         end
 
@@ -106,6 +142,111 @@ classdef Clothoid < handle
 
         end
 
+        %% graphics
+
+        function init_graphics(obj, h)
+
+            obj.gxobj = plot( ...
+                             nan, nan, ...
+                             'Parent', h, ...
+                             'Marker', 'o', ...
+                             'MarkerSize', 3, ...
+                             'MarkerFaceColor', 'w', ...
+                             'MarkerIndices', [1, obj.SAMPLES], ...
+                             'UserData', obj, ...
+                             'ButtonDownFcn', @obj.click);
+
+            obj.refresh_graphics();
+
+        end
+
+        function refresh_graphics(obj)
+
+            set(obj.gxobj, ...
+                'XData', obj.qx, ...
+                'YData', obj.qy);
+
+        end
+
+        %% interactive
+
+        function click(obj, h, event)
+
+            if event.Button == 1
+                obj.edit(h, event);
+            elseif event.Button == 3
+                obj.delete();
+            end
+
+        end
+
+        function edit(obj, h, event)
+
+            editable.Origin_X = obj.x;
+            editable.Origin_Y = obj.y;
+            editable.Origin_Heading = obj.psi;
+            editable.Length = obj.len;
+            editable.Curvature_Start = obj.kappa_start;
+            editable.Curvature_End = obj.kappa_end;
+
+            line_width = get(h, 'LineWidth');
+            set(h, 'LineWidth', line_width * 5);
+
+            editable = gedit(editable, 'Name', 'Edit Clothoid').retrieve();
+
+            obj.x = editable.Origin_X;
+            obj.y = editable.Origin_Y;
+            obj.psi = editable.Origin_Heading;
+            obj.len = editable.Length;
+            obj.kappa_start = editable.Curvature_Start;
+            obj.kappa_end = editable.Curvature_End;
+
+            obj.changed(); % todo: use listener
+
+            pause(.45);
+
+            set(h, 'LineWidth', line_width);
+
+        end
+
+        function changed(obj)
+
+            obj.refresh_graphics();
+
+            if ~isempty(obj.child)
+                obj.child.origin(obj);
+            end
+
+        end
+
+        function origin(obj, parent)
+
+            % todo: use listener
+            [x0, y0, psi0, kappa0, ~] = parent.tip();
+            obj.x = x0;
+            obj.y = y0;
+            obj.psi = psi0;
+            obj.kappa_start = kappa0;
+
+            obj.changed();
+
+        end
+
     end
+
+end
+
+function constrains = get_constrains(varargin)
+
+    persistent parser
+    if isempty(parser)
+        parser = inputParser();
+        parser.addParameter('Length', []);
+        parser.addParameter('FinalCurvature', []);
+        parser.addParameter('HeadingChange', []);
+    end
+
+    parser.parse(varargin{:});
+    constrains = parser.Results;
 
 end

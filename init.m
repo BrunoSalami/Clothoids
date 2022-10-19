@@ -1,17 +1,18 @@
-function s = init()
+function last = init()
 
-    h = axes();
+    addpath ../structprompt/gedit/;
 
-    s = nodes.Stretch(nodes.Clothoid(h, 1, 2, pi / 2, 10, 0, 0));
-    s.append(5, 1 / 2);
-    s.append(1, 0);
-    s.append(5, 1 / 2);
-    s.append(3, 0);
-    s.append(7, 1 / 2);
-    s.append(3, 0);
-    s.append(1, 1 / 2);
-    s.append(2, 1 / 4);
+    h = axes( ...
+             'NextPlot', 'Add', ...
+             'DataAspectRatio', [1, 1, 1]);
 
-    axis equal;
+    last = nodes.Clothoid(h, 0, 0, 0, 0, 'Length', 10, 'HeadingChange', 0). ...
+        append('FinalCurvature', 1 / 10, 'HeadingChange', pi / 6). ...
+        append('FinalCurvature', 1 / 10, 'HeadingChange', pi / 6). ...
+        append('FinalCurvature', 0, 'HeadingChange', pi / 6). ...
+        append('FinalCurvature', 0, 'Length', 5). ...
+        append('FinalCurvature', 1 / 10, 'HeadingChange', pi / 2). ...
+        append('FinalCurvature', 1 / 10, 'HeadingChange', pi / 4). ...
+        append('FinalCurvature', 0, 'HeadingChange', pi / 4);
 
 end
