@@ -14,7 +14,9 @@ classdef Clothoid < handle
         len
         kappa_start
         kappa_end
+
         child
+        parent
 
     end
 
@@ -46,6 +48,7 @@ classdef Clothoid < handle
             obj.constrain(varargin{:});
 
             obj.child = nodes.Clothoid.empty();
+            obj.parent = nodes.Clothoid.empty();
 
             obj.init_graphics(h);
 
@@ -59,6 +62,7 @@ classdef Clothoid < handle
 
             [x0, y0, psi0, kappa0, h] = obj.tip();
             obj.child = nodes.Clothoid(h, x0, y0, psi0, kappa0, varargin{:});
+            obj.child.link_parent(obj);
 
             child = obj.child;
 
@@ -209,6 +213,15 @@ classdef Clothoid < handle
 
         end
 
+        %% chain propagations
+
+        function link_parent(obj, parent)
+
+            assert(isa(parent, 'nodes.Clothoid'));
+            obj.parent = parent;
+
+        end
+
         function changed(obj)
 
             obj.refresh_graphics();
@@ -229,6 +242,32 @@ classdef Clothoid < handle
             obj.kappa_start = kappa0;
 
             obj.changed();
+
+        end
+
+        function clothoid_chain = chain(obj)
+
+            first = obj.get_first();
+            clothoid_chain = first.get_next(nodes.Clothoid.empty());
+
+        end
+
+        function first = get_first(obj)
+
+            if isempty(obj.parent)
+                first = obj;
+            else
+                first = obj.parent.get_first();
+            end
+
+        end
+
+        function clothoid_chain = get_next(obj, clothoid_chain)
+
+            clothoid_chain(end + 1) = obj;
+            if ~isempty(obj.child)
+                clothoid_chain = obj.child.get_next(clothoid_chain);
+            end
 
         end
 
