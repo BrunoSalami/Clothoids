@@ -1,0 +1,3 @@
+[submodule "external/structprompt"]
+	path = external/structprompt
+	url = git@github.com:BrunoSalami/structprompt.git

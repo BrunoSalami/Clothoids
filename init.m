@@ -1,6 +1,6 @@
 function last = init()
 
-    addpath ../structprompt/gedit/;
+    addpath(fullfile('external', 'structprompt', 'gedit'));
 
     h = axes( ...
              'NextPlot', 'Add', ...
