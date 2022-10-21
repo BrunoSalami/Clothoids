@@ -193,8 +193,7 @@ classdef Clothoid < handle
             editable.Curvature_Start = obj.kappa_start;
             editable.Curvature_End = obj.kappa_end;
 
-            line_width = get(h, 'LineWidth');
-            set(h, 'LineWidth', line_width * 5);
+            obj.select();
 
             editable = gedit(editable, 'Name', 'Edit Clothoid').retrieve();
 
@@ -209,7 +208,19 @@ classdef Clothoid < handle
 
             pause(.45);
 
-            set(h, 'LineWidth', line_width);
+            obj.unselect();
+
+        end
+
+        function select(obj)
+
+            set(obj.gxobj, 'LineWidth', 3);
+
+        end
+
+        function unselect(obj)
+
+            set(obj.gxobj, 'LineWidth', 1);
 
         end
 
