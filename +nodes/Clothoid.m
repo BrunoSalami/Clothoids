@@ -15,8 +15,8 @@ classdef Clothoid < handle
         kappa_start
         kappa_end
 
-        child
-        parent
+        previous
+        next
 
     end
 
@@ -47,8 +47,8 @@ classdef Clothoid < handle
             obj.kappa_start = kappa_start;
             obj.constrain(varargin{:});
 
-            obj.child = nodes.Clothoid.empty();
-            obj.parent = nodes.Clothoid.empty();
+            obj.previous = nodes.Clothoid.empty();
+            obj.next = nodes.Clothoid.empty();
 
             obj.init_graphics(h);
 
@@ -56,22 +56,30 @@ classdef Clothoid < handle
 
         %% chain
 
-        function child = append(obj, varargin)
+        function insert(obj, len)
 
-            assert(isempty(obj.child));
+            new = nodes.Clothoid(obj.gxobj.Parent, 0, 0, 0, 0, ...
+                                 'Length', len, ...
+                                 'FinalCurvature', obj.kappa_start);
 
+            obj.link(obj.previous, new);
+            obj.link(new, obj.next);
+
+        end
+
+        function new = append(obj, varargin)
+
+            assert(isempty(obj.next));
             [x0, y0, psi0, kappa0, h] = obj.tip();
-            obj.child = nodes.Clothoid(h, x0, y0, psi0, kappa0, varargin{:});
-            obj.child.link_parent(obj);
-
-            child = obj.child;
+            new = nodes.Clothoid(h, x0, y0, psi0, kappa0, varargin{:});
+            obj.link(obj, new);
 
         end
 
         function delete(obj)
 
+            obj.link(obj.previous, obj.next);
             delete(obj.gxobj);
-            delete(obj.child);
 
         end
 
@@ -226,27 +234,20 @@ classdef Clothoid < handle
 
         %% chain propagations
 
-        function link_parent(obj, parent)
-
-            assert(isa(parent, 'nodes.Clothoid'));
-            obj.parent = parent;
-
-        end
-
         function changed(obj)
 
             obj.refresh_graphics();
 
-            if ~isempty(obj.child)
-                obj.child.origin(obj);
+            if ~isempty(obj.next)
+                obj.next.origin(obj);
             end
 
         end
 
-        function origin(obj, parent)
+        function origin(obj, previous)
 
             % todo: use listener
-            [x0, y0, psi0, kappa0, ~] = parent.tip();
+            [x0, y0, psi0, kappa0, ~] = previous.tip();
             obj.x = x0;
             obj.y = y0;
             obj.psi = psi0;
@@ -265,10 +266,20 @@ classdef Clothoid < handle
 
         function first = get_first(obj)
 
-            if isempty(obj.parent)
+            if isempty(obj.previous)
                 first = obj;
             else
-                first = obj.parent.get_first();
+                first = obj.previous.get_first();
+            end
+
+        end
+
+        function last = get_last(obj)
+
+            if isempty(obj.next)
+                last = obj;
+            else
+                last = obj.next.get_last();
             end
 
         end
@@ -276,8 +287,28 @@ classdef Clothoid < handle
         function clothoid_chain = get_next(obj, clothoid_chain)
 
             clothoid_chain(end + 1) = obj;
-            if ~isempty(obj.child)
-                clothoid_chain = obj.child.get_next(clothoid_chain);
+            if ~isempty(obj.next)
+                clothoid_chain = obj.next.get_next(clothoid_chain);
+            end
+
+        end
+
+    end
+
+    methods (Static)
+
+        function link(obj1, obj2)
+
+            if ~isempty(obj1)
+                obj1.next = obj2;
+            end
+
+            if ~isempty(obj2)
+                obj2.previous = obj1;
+            end
+
+            if ~isempty(obj1) && ~isempty(obj2)
+                obj2.origin(obj1);
             end
 
         end

@@ -31,7 +31,7 @@ classdef init < handle
                        'NumberTitle', 'Off', ...
                        'Tag', 'ClothoidOpt', ...
                        'Units', 'Pixel', ...
-                       'Position', [100, 300, 820, 640]);
+                       'Position', [100, 300, 920, 640]);
 
             p1 = uipanel( ...
                          'Parent', f, ...
@@ -43,6 +43,12 @@ classdef init < handle
                    button(p1, 'Next', @obj.next), ...
                    button(p1, 'Apply', @obj.apply)];
             align(nav, 'Fixed', 10, 'Bottom');
+
+            mod = [ ...
+                   button(p1, 'delete', @obj.deletecl, 'Position', [20, 75, 60, 35]), ...
+                   button(p1, 'insert', @obj.insertcl, 'Position', [20, 75, 60, 35]), ...
+                   button(p1, 'append', @obj.appendcl, 'Position', [20, 75, 60, 35])];
+            align(mod, 'Fixed', 10, 'Bottom', 100);
 
             lbls = [ ...
                     label(p1, 'origin x'), ...
@@ -64,8 +70,9 @@ classdef init < handle
             obj.ax = axes( ...
                           'NextPlot', 'Add', ...
                           'DataAspectRatio', [1, 1, 1], ...
+                          'PlotBoxAspectRatio', [1, 1, 1], ...
                           'Units', 'Pixel', ...
-                          'Position', [300, 20, 500, 600]);
+                          'Position', [320, 40, 580, 580]);
 
         end
 
@@ -100,17 +107,21 @@ classdef init < handle
 
         function previous(obj, h, event)
 
-            obj.current.unselect();
-            obj.current = obj.current.parent;
-            obj.focus();
+            if ~isempty(obj.current.previous)
+                obj.current.unselect();
+                obj.current = obj.current.previous;
+                obj.focus();
+            end
 
         end
 
         function next(obj, h, event)
 
-            obj.current.unselect();
-            obj.current = obj.current.child;
-            obj.focus();
+            if ~isempty(obj.current.next)
+                obj.current.unselect();
+                obj.current = obj.current.next;
+                obj.focus();
+            end
 
         end
 
@@ -123,6 +134,34 @@ classdef init < handle
             obj.current.kappa_start = eval(get(obj.editor.kappa_start, 'String'));
             obj.current.kappa_end = eval(get(obj.editor.kappa_end, 'String'));
             obj.current.changed();
+
+        end
+
+        function deletecl(obj, h, event)
+
+            if isempty(obj.current.previous)
+                error('Can''t delete the first clothoid');
+            end
+
+            to_delete = obj.current;
+            obj.current = obj.current.previous;
+            obj.focus();
+            to_delete.delete();
+
+        end
+
+        function insertcl(obj, h, event)
+
+            obj.current.insert(10);
+
+        end
+
+        function appendcl(obj, h, event)
+
+            obj.current.unselect();
+            obj.current = obj.current.get_last().append( ...
+                                                        'FinalCurvature', 0, 'Length', 10);
+            obj.focus();
 
         end
 
@@ -148,7 +187,7 @@ function h = label(p, lbl, varargin)
                   'Parent', p, ...
                   'Style', 'Text', ...
                   'String', lbl, ...
-                  'Position', [20, 75, 130, 35], ...
+                  'Position', [20, 130, 130, 35], ...
                   'HorizontalAlignment', 'Right');
 
 end
@@ -158,7 +197,7 @@ function h = edit(p, cb)
     h = uicontrol( ...
                   'Parent', p, ...
                   'Style', 'Edit', ...
-                  'Position', [180, 75, 60, 35], ...
+                  'Position', [180, 130, 60, 35], ...
                   'Callback', cb);
 
 end
