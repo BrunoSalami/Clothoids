@@ -152,17 +152,25 @@ classdef init < handle
 
         function insertcl(obj, h, event)
 
+            prompt.Length = 10;
+            prompt = gedit(prompt, 'Name', 'Insert new element').retrieve();
+
             obj.current.unselect();
-            obj.current = obj.current.insert(10);
+            obj.current = obj.current.insert(prompt.Length);
             obj.focus();
 
         end
 
         function appendcl(obj, h, event)
 
+            prompt.Length = 10;
+            prompt.FinalCurvature = 0;
+            prompt = gedit(prompt, 'Name', 'Append new element').retrieve();
+
             obj.current.unselect();
             obj.current = obj.current.get_last().append( ...
-                                                        'FinalCurvature', 0, 'Length', 10);
+                                                        'FinalCurvature', prompt.FinalCurvature, ...
+                                                        'Length', prompt.Length);
             obj.focus();
 
         end
