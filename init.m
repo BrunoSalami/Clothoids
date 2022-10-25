@@ -152,7 +152,9 @@ classdef init < handle
 
         function insertcl(obj, h, event)
 
-            obj.current.insert(10);
+            obj.current.unselect();
+            obj.current = obj.current.insert(10);
+            obj.focus();
 
         end
 
@@ -199,12 +201,5 @@ function h = edit(p, cb)
                   'Style', 'Edit', ...
                   'Position', [180, 130, 60, 35], ...
                   'Callback', cb);
-
-end
-
-function previous(h, e)
-
-    disp(h);
-    disp(e);
 
 end

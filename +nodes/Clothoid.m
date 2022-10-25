@@ -56,14 +56,14 @@ classdef Clothoid < handle
 
         %% chain
 
-        function insert(obj, len)
+        function new = insert(obj, len)
 
-            new = nodes.Clothoid(obj.gxobj.Parent, 0, 0, 0, 0, ...
+            new = nodes.Clothoid(obj.gxobj.Parent, obj.x, obj.y, obj.psi, obj.kappa_start, ...
                                  'Length', len, ...
                                  'FinalCurvature', obj.kappa_start);
 
             obj.link(obj.previous, new);
-            obj.link(new, obj.next);
+            obj.link(new, obj);
 
         end
 
