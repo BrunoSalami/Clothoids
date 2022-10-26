@@ -165,10 +165,11 @@ classdef init < handle
 
             prompt.Length = 10;
             prompt.FinalCurvature = 0;
+            prompt.HeadingChange = 0;
             prompt = gedit(prompt, 'Name', 'Append new element').retrieve();
 
             obj.current.unselect();
-            obj.current = obj.current.get_last().append( ...
+            obj.current = obj.current.get_last().append('HeadingChange', prompt.HeadingChange, ...
                                                         'FinalCurvature', prompt.FinalCurvature, ...
                                                         'Length', prompt.Length);
             obj.focus();

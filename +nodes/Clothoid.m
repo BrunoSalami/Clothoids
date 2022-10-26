@@ -11,12 +11,19 @@ classdef Clothoid < handle
         x
         y
         psi
-        len
         kappa_start
+
+        len
         kappa_end
 
         previous
         next
+
+    end
+
+    properties (AbortSet)
+
+        constraints
 
     end
 
@@ -45,7 +52,8 @@ classdef Clothoid < handle
             obj.y = y;
             obj.psi = psi;
             obj.kappa_start = kappa_start;
-            obj.constrain(varargin{:});
+            obj.constraints = obj.get_constraints(varargin{:});
+            obj.constrain();
 
             obj.previous = nodes.Clothoid.empty();
             obj.next = nodes.Clothoid.empty();
@@ -85,19 +93,17 @@ classdef Clothoid < handle
 
         %% shape constrains
 
-        function constrain(obj, varargin)
+        function constrain(obj)
 
-            constrains = get_constrains(varargin{:});
-
-            if isempty(constrains.Length)
-                obj.kappa_end = constrains.FinalCurvature;
-                obj.len = 2 * constrains.HeadingChange / (obj.kappa_end + obj.kappa_start);
-            elseif isempty(constrains.FinalCurvature)
-                obj.len = constrains.Length;
-                obj.kappa_end = 2 * constrains.HeadingChange / obj.len - obj.kappa_start;
-            elseif isempty(constrains.HeadingChange)
-                obj.len = constrains.Length;
-                obj.kappa_end = constrains.FinalCurvature;
+            if ~isfield(obj.constraints, 'Length')
+                obj.kappa_end = obj.constraints.FinalCurvature;
+                obj.len = 2 * obj.constraints.HeadingChange / (obj.kappa_end + obj.kappa_start);
+            elseif ~isfield(obj.constraints, 'FinalCurvature')
+                obj.len = obj.constraints.Length;
+                obj.kappa_end = 2 * obj.constraints.HeadingChange / obj.len - obj.kappa_start;
+            elseif ~isfield(obj.constraints, 'HeadingChange')
+                obj.len = obj.constraints.Length;
+                obj.kappa_end = obj.constraints.FinalCurvature;
             end
 
             obj.refresh_graphics();
@@ -105,6 +111,13 @@ classdef Clothoid < handle
         end
 
         %% evaluation
+
+        function set.constraints(obj, value)
+
+            assert(numel(fieldnames(value)) == 2);
+            obj.constraints = value;
+
+        end
 
         function [x, y, psi, kappa, h] = tip(obj)
 
@@ -194,23 +207,39 @@ classdef Clothoid < handle
 
         function edit(obj, h, event)
 
-            editable.Origin_X = obj.x;
-            editable.Origin_Y = obj.y;
-            editable.Origin_Heading = obj.psi;
-            editable.Length = obj.len;
-            editable.Curvature_Start = obj.kappa_start;
-            editable.Curvature_End = obj.kappa_end;
+            if isempty(obj.previous)
+
+                editable.Origin_X = obj.x;
+                editable.Origin_Y = obj.y;
+                editable.Origin_Heading = obj.psi;
+                editable.Curvature_Start = obj.kappa_start;
+                editable.Constraints = obj.constraints;
+
+            else
+
+                editable = obj.constraints;
+
+            end
 
             obj.select();
 
             editable = gedit(editable, 'Name', 'Edit Clothoid').retrieve();
 
-            obj.x = editable.Origin_X;
-            obj.y = editable.Origin_Y;
-            obj.psi = editable.Origin_Heading;
-            obj.len = editable.Length;
-            obj.kappa_start = editable.Curvature_Start;
-            obj.kappa_end = editable.Curvature_End;
+            if isempty(obj.previous)
+
+                obj.x = editable.Origin_X;
+                obj.y = editable.Origin_Y;
+                obj.psi = editable.Origin_Heading;
+                obj.kappa_start = editable.Curvature_Start;
+                obj.constraints = editable.Constraints;
+
+            else
+
+                obj.constraints = editable;
+
+            end
+
+            obj.constrain();
 
             obj.changed(); % todo: use listener
 
@@ -252,6 +281,7 @@ classdef Clothoid < handle
             obj.y = y0;
             obj.psi = psi0;
             obj.kappa_start = kappa0;
+            obj.constrain();
 
             obj.changed();
 
@@ -313,21 +343,21 @@ classdef Clothoid < handle
 
         end
 
+        function constrains = get_constraints(varargin)
+
+            persistent parser
+            if isempty(parser)
+                parser = inputParser();
+                parser.addParameter('Length', []);
+                parser.addParameter('FinalCurvature', []);
+                parser.addParameter('HeadingChange', []);
+            end
+
+            parser.parse(varargin{:});
+            constrains = rmfield(parser.Results, parser.UsingDefaults);
+
+        end
+
     end
-
-end
-
-function constrains = get_constrains(varargin)
-
-    persistent parser
-    if isempty(parser)
-        parser = inputParser();
-        parser.addParameter('Length', []);
-        parser.addParameter('FinalCurvature', []);
-        parser.addParameter('HeadingChange', []);
-    end
-
-    parser.parse(varargin{:});
-    constrains = parser.Results;
 
 end
