@@ -5,6 +5,7 @@ classdef init < handle
         current
         ax
         editor
+        points
 
     end
 
@@ -13,6 +14,7 @@ classdef init < handle
         function obj = init()
 
             obj.init_figure();
+            obj.init_points();
             obj.init_path();
 
         end
@@ -73,6 +75,15 @@ classdef init < handle
                           'PlotBoxAspectRatio', [1, 1, 1], ...
                           'Units', 'Pixel', ...
                           'Position', [320, 40, 580, 580]);
+
+        end
+
+        function init_points(obj)
+
+            obj.points = [ ...
+                          Point(10, 20, 'o'), ...
+                          Point(5, 30, 'o'), ...
+                          Point(15, 10, 'o')];
 
         end
 
