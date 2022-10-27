@@ -5,6 +5,15 @@ classdef Point < handle
         x_offset
         y_offset
         hPoint
+        x
+        y
+
+    end
+
+    events
+
+        moving
+        dropped
 
     end
 
@@ -18,9 +27,9 @@ classdef Point < handle
 
         function grab(obj, ~, ~)
 
-            [x, y] = obj.get_cursor();
-            obj.x_offset = get(obj.hPoint, 'XData') - x;
-            obj.y_offset = get(obj.hPoint, 'YData') - y;
+            [cx, cy] = obj.get_cursor();
+            obj.x_offset = get(obj.hPoint, 'XData') - cx;
+            obj.y_offset = get(obj.hPoint, 'YData') - cy;
 
             set(gcf, ...
                 'WindowButtonMotionFcn', @obj.move, ...
@@ -30,10 +39,34 @@ classdef Point < handle
 
         function move(obj, ~, ~)
 
-            [x, y] = obj.get_cursor();
+            [cx, cy] = obj.get_cursor();
             set(obj.hPoint, ...
-                'XData', x + obj.x_offset, ...
-                'YData', y + obj.y_offset);
+                'XData', cx + obj.x_offset, ...
+                'YData', cy + obj.y_offset);
+
+            obj.notify('moving');
+
+        end
+
+        function drop(obj, ~, ~)
+
+            set(gcf, ...
+                'WindowButtonMotionFcn', '', ...
+                'WindowButtonUpFcn', '');
+
+            obj.notify('dropped');
+
+        end
+
+        function value = get.x(obj)
+
+            value = get(obj.hPoint, 'XData');
+
+        end
+
+        function value = get.y(obj)
+
+            value = get(obj.hPoint, 'YData');
 
         end
 
@@ -41,19 +74,11 @@ classdef Point < handle
 
     methods (Static)
 
-        function drop(~, ~)
-
-            set(gcf, ...
-                'WindowButtonMotionFcn', '', ...
-                'WindowButtonUpFcn', '');
-
-        end
-
-        function [x, y] = get_cursor()
+        function [cx, cy] = get_cursor()
 
             cursor = get(gca, 'CurrentPoint');
-            x = cursor(1);
-            y = cursor(3);
+            cx = cursor(1);
+            cy = cursor(3);
 
         end
 
