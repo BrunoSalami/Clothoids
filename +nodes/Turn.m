@@ -1,18 +1,14 @@
 classdef Turn < handle
 
-    properties (Constant)
-
-        TURNRADIUS = 3
-        REL_ARC_LEN = .5
-        REL_ENTRY_LEN = .5
-
-    end
-
     properties (Access = private)
 
         cps
         segments
         hline
+        settings = struct( ...
+                          'turn_radius', 2, ...
+                          'relative_arc_length', .5, ...
+                          'relative_entry_length', .5)
 
     end
 
@@ -63,6 +59,8 @@ classdef Turn < handle
             dotp = n1(1) * n2(1) + n1(2) * n2(2);
             detp = n1(1) * n2(2) - n1(2) * n2(1);
             heading_change = atan2(detp, dotp);
+            obj.settings.turn_radius = 2 / heading_change;
+            max_curvature = 1 / obj.settings.turn_radius;
 
             % 1st clothoid
             obj.segments(1).x = obj.cps(1).x;
@@ -70,14 +68,14 @@ classdef Turn < handle
             obj.segments(1).psi = atan2(n1(2), n1(1));
             obj.segments(1).constraints = struct( ...
                                                  'HeadingChange', heading_change * obj.rel_entry_len, ...
-                                                 'FinalCurvature', 1 / obj.TURNRADIUS);
+                                                 'FinalCurvature', max_curvature);
             obj.segments(1).constrain();
             obj.segments(1).changed();
 
             % 2nd clothoid
             obj.segments(2).constraints = struct( ...
-                                                 'HeadingChange', heading_change * obj.REL_ARC_LEN, ...
-                                                 'FinalCurvature', 1 / obj.TURNRADIUS);
+                                                 'HeadingChange', heading_change * obj.settings.relative_arc_length, ...
+                                                 'FinalCurvature', max_curvature);
             obj.segments(2).constrain();
             obj.segments(2).changed();
 
@@ -100,8 +98,8 @@ classdef Turn < handle
 
             % helper line
             set(obj.hline, ...
-                'XData', [obj.cps.x], ...
-                'YData', [obj.cps.y]);
+                'XData', [obj.cps(1:2).x], ...
+                'YData', [obj.cps(1:2).y]);
 
         end
 
@@ -120,13 +118,13 @@ classdef Turn < handle
 
         function value = get.rel_entry_len(obj)
 
-            value = (1 - obj.REL_ARC_LEN) * obj.REL_ENTRY_LEN;
+            value = (1 - obj.settings.relative_arc_length) * obj.settings.relative_entry_length;
 
         end
 
         function value = get.rel_exit_len(obj)
 
-            value = (1 - obj.REL_ARC_LEN) * (1 - obj.REL_ENTRY_LEN);
+            value = (1 - obj.settings.relative_arc_length) * (1 - obj.settings.relative_entry_length);
 
         end
 

@@ -1,3 +1,4 @@
+addpath external/structprompt/gedit;
 figure( ...
        'Units', 'normalized', ...
        'Position', [0, 0, 1, 1]);
@@ -7,16 +8,13 @@ h = axes( ...
          'DataAspectRatio', [1, 1, 1], ...
          'PlotBoxAspectRatio', [1, 1, 1]);
 hold on;
-xlim([-12, 12]);
-ylim([-12, 12]);
+R = 10;
+xlim([-1, 1] * R * 1.5);
+ylim([-1, 1] * R * 1.5);
 
-cps = [ ...
-       Point(-5, -5, 'o'), ...
-       Point(5, -5, 'o'), ...
-       Point(5, 5, 'o'), ...
-       Point(-5, 5, 'o')];
+cps = arrayfun(@(alpha) Point(R * cos(alpha), R * sin(alpha), 'o'), (0:45:359) / 180 * pi);
+% cps = arrayfun(@(alpha) Point(R * rand(), R * rand(), 'o'), 1:10);
 
-t1 = nodes.Turn(h, cps(1:3));
-t2 = nodes.Turn(h, cps(2:4));
-t3 = nodes.Turn(h, cps([3, 4, 1]));
-t4 = nodes.Turn(h, cps([4, 1, 2]));
+for i = 0:numel(cps) - 1
+    nodes.Turn(h, cps(mod(i + (0:2), numel(cps)) + 1));
+end
