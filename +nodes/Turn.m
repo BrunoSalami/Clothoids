@@ -5,10 +5,9 @@ classdef Turn < handle
         cps
         segments
         hline
-        settings = struct( ...
-                          'turn_radius', 2, ...
-                          'relative_arc_length', .5, ...
-                          'relative_entry_length', .5)
+        turn_radius = 2
+        relative_arc_length = .5
+        relative_entry_length = .5
 
     end
 
@@ -41,7 +40,8 @@ classdef Turn < handle
                 append('HeadingChange', 0, 'FinalCurvature', 0). ...
                 chain();
 
-            addlistener(obj.cps, 'moving', @obj.cps_changed);
+            addlistener(obj.cps, 'moving', @obj.control_points_moved);
+            addlistener(obj.cps(2), 'pulling', @obj.control_points_pulled);
 
             notify(obj.cps, 'moving');
 
@@ -51,7 +51,18 @@ classdef Turn < handle
 
     methods (Access = private)
 
-        function cps_changed(obj, ~, ~)
+        function control_points_pulled(obj, source, event)
+
+            scale = .1;
+            obj.relative_entry_length = max(min(event.x * scale, .5), -.5) + .5;
+            obj.turn_radius = event.y;
+            %             obj.relative_arc_length = max(min(event.y * scale, .5), -.5) + .5;
+
+            obj.control_points_moved();
+
+        end
+
+        function control_points_moved(obj, ~, ~)
 
             n1 = obj.get_n(1);
             n2 = obj.get_n(2);
@@ -59,8 +70,8 @@ classdef Turn < handle
             dotp = n1(1) * n2(1) + n1(2) * n2(2);
             detp = n1(1) * n2(2) - n1(2) * n2(1);
             heading_change = atan2(detp, dotp);
-            obj.settings.turn_radius = 2 / heading_change;
-            max_curvature = 1 / obj.settings.turn_radius;
+            %             obj.turn_radius = 2 / heading_change;
+            max_curvature = 1 / obj.turn_radius;
 
             % 1st clothoid
             obj.segments(1).x = obj.cps(1).x;
@@ -74,7 +85,7 @@ classdef Turn < handle
 
             % 2nd clothoid
             obj.segments(2).constraints = struct( ...
-                                                 'HeadingChange', heading_change * obj.settings.relative_arc_length, ...
+                                                 'HeadingChange', heading_change * obj.relative_arc_length, ...
                                                  'FinalCurvature', max_curvature);
             obj.segments(2).constrain();
             obj.segments(2).changed();
@@ -118,13 +129,13 @@ classdef Turn < handle
 
         function value = get.rel_entry_len(obj)
 
-            value = (1 - obj.settings.relative_arc_length) * obj.settings.relative_entry_length;
+            value = (1 - obj.relative_arc_length) * obj.relative_entry_length;
 
         end
 
         function value = get.rel_exit_len(obj)
 
-            value = (1 - obj.settings.relative_arc_length) * (1 - obj.settings.relative_entry_length);
+            value = (1 - obj.relative_arc_length) * (1 - obj.relative_entry_length);
 
         end
 
